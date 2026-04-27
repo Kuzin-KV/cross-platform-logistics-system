@@ -60,7 +60,10 @@ def get_user(token, cur):
     row = cur.fetchone()
     if not row:
         return None
-    return {"id": row[0], "name": row[1], "role": row[2],
+    user_id = row[0]
+    cur.execute(f"SELECT role FROM {SCHEMA}.user_roles WHERE user_id = %s", (user_id,))
+    roles = [r[0] for r in cur.fetchall()] or [row[2]]
+    return {"id": user_id, "name": row[1], "role": row[2], "roles": roles,
             "department_id": row[3], "department_name": row[4] or ""}
 
 def log_action(cur, user, action, target):
@@ -134,8 +137,8 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"SELECT id, name FROM {SCHEMA}.vehicles ORDER BY name")
         vehicles = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
 
-        # водители (для мастера ТЦ)
-        cur.execute(f"SELECT id, name FROM {SCHEMA}.users WHERE role = 'driver' ORDER BY name")
+        # водители (для мастера ТЦ) — все у кого есть роль driver
+        cur.execute(f"SELECT DISTINCT u.id, u.name FROM {SCHEMA}.users u JOIN {SCHEMA}.user_roles ur ON ur.user_id = u.id WHERE ur.role = 'driver' ORDER BY u.name")
         drivers = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
 
         # названия групп
@@ -161,8 +164,9 @@ def handler(event: dict, context) -> dict:
 
     # ── GET ?action=list — список заявок ─────────────────────────────────────
     if method == "GET" and action == "list":
-        # Водитель видит только свои заявки
-        if user and user["role"] == "driver":
+        # Водитель (только водитель, без других ролей) видит только свои заявки
+        roles = user.get("roles") or [user["role"]] if user else []
+        if user and set(roles) == {"driver"}:
             cur.execute(f"""
                 SELECT id, order_num, department, applicant_name, cargo_name, quantity,
                        execution_date::text, load_place, unload_place, priority,
@@ -198,7 +202,8 @@ def handler(event: dict, context) -> dict:
         if not user:
             conn.close()
             return {"statusCode": 401, "headers": CORS, "body": json.dumps({"error": "Требуется авторизация"})}
-        if user["role"] not in ("shop_chief", "admin"):
+        user_roles = set(user.get("roles") or [user["role"]])
+        if not user_roles & {"shop_chief", "admin"}:
             conn.close()
             return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Нет прав для создания заявки"})}
 
@@ -283,14 +288,16 @@ def handler(event: dict, context) -> dict:
 
         current_stage = order.get("stage") or compute_stage(order)
 
+        roles = user.get("roles") or [user["role"]]
+
         # Проверка доступа для водителя — только свои заявки
-        if user["role"] == "driver" and order.get("driver_id") != user["id"]:
+        if "driver" in roles and order.get("driver_id") != user["id"] and set(roles) == {"driver"}:
             conn.close()
             return {"statusCode": 403, "headers": CORS,
                     "body": json.dumps({"error": "Водитель может редактировать только свои заявки"})}
 
-        # Проверка минимального этапа для роли
-        min_stage = STAGE_UNLOCK.get(user["role"], 99)
+        # Минимальный этап — наименьший из всех ролей пользователя
+        min_stage = min(STAGE_UNLOCK.get(r, 99) for r in roles)
         if current_stage < min_stage:
             conn.close()
             return {"statusCode": 403, "headers": CORS,
@@ -300,7 +307,10 @@ def handler(event: dict, context) -> dict:
             try: return int(v) if v else None
             except: return None
 
-        allowed = ROLE_FIELDS.get(user["role"], set())
+        # Суммируем разрешённые поля по всем ролям
+        allowed = set()
+        for r in roles:
+            allowed |= ROLE_FIELDS.get(r, set())
         fields_to_update = {k: v for k, v in body.items() if k in allowed and k != "id"}
 
         # Приводим integer FK к int
@@ -308,10 +318,10 @@ def handler(event: dict, context) -> dict:
             if int_field in fields_to_update:
                 fields_to_update[int_field] = to_int(fields_to_update[int_field])
 
-        # Автозаполнение подписи — если роль sender или receiver, подпись = имя пользователя
-        if user["role"] == "sender" and "sender_sign" not in fields_to_update:
+        # Автозаполнение подписи
+        if "sender" in roles and "sender_sign" not in fields_to_update:
             fields_to_update["sender_sign"] = user["name"]
-        if user["role"] == "receiver" and "receiver_sign" not in fields_to_update:
+        if "receiver" in roles and "receiver_sign" not in fields_to_update:
             fields_to_update["receiver_sign"] = user["name"]
 
         # Если ТЦ выбирает технику — обновляем текстовое название
@@ -327,7 +337,7 @@ def handler(event: dict, context) -> dict:
             r = cur.fetchone()
             if r:
                 fields_to_update["driver_name"] = r[0]
-        if user["role"] == "tc_master" and ("driver_id" in fields_to_update or "driver_name" in fields_to_update):
+        if "tc_master" in roles and ("driver_id" in fields_to_update or "driver_name" in fields_to_update):
             fields_to_update["tc_master_name"] = user["name"]
 
         if not fields_to_update:

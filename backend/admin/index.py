@@ -27,10 +27,13 @@ def get_user(token, cur):
     row = cur.fetchone()
     if not row:
         return None
-    return {"id": row[0], "name": row[1], "role": row[2]}
+    user_id = row[0]
+    cur.execute(f"SELECT role FROM {SCHEMA}.user_roles WHERE user_id = %s", (user_id,))
+    roles = [r[0] for r in cur.fetchall()] or [row[2]]
+    return {"id": user_id, "name": row[1], "role": row[2], "roles": roles}
 
 def require_admin(user):
-    return user and user["role"] == "admin"
+    return user and ("admin" in (user.get("roles") or [user["role"]]))
 
 def rows_to_list(cur):
     cols = [d[0] for d in cur.description]
@@ -114,36 +117,45 @@ def handler(event: dict, context) -> dict:
                 SELECT u.id, u.name, u.login, u.role, u.department_id, d.name as dept_name
                 FROM {SCHEMA}.users u
                 LEFT JOIN {SCHEMA}.departments d ON d.id = u.department_id
-                ORDER BY u.role, u.name
+                ORDER BY u.name
             """)
-            rows = rows_to_list(cur)
+            users_rows = rows_to_list(cur)
+            # Загружаем роли для всех пользователей
+            cur.execute(f"SELECT user_id, role FROM {SCHEMA}.user_roles")
+            roles_map: dict = {}
+            for uid, r in cur.fetchall():
+                roles_map.setdefault(uid, []).append(r)
+            for u in users_rows:
+                u["roles"] = roles_map.get(u["id"], [u["role"]])
             conn.close()
             return {"statusCode": 200, "headers": CORS,
-                    "body": json.dumps(rows, ensure_ascii=False)}
+                    "body": json.dumps(users_rows, ensure_ascii=False)}
 
         if action == "add" and method == "POST":
             name = body.get("name", "").strip()
             login = body.get("login", "").strip()
             password = body.get("password", "").strip()
-            role = body.get("role", "").strip()
+            roles = [r for r in body.get("roles", []) if r in ROLE_CHOICES]
             department_id = body.get("department_id") or None
 
-            if not name or not login or not password or role not in ROLE_CHOICES:
+            if not name or not login or not password or not roles:
                 conn.close()
                 return {"statusCode": 400, "headers": CORS,
-                        "body": json.dumps({"error": "Заполните все обязательные поля (name, login, password, role)"})}
+                        "body": json.dumps({"error": "Заполните все обязательные поля (name, login, password, roles)"})}
 
-            # Проверка уникальности логина
             cur.execute(f"SELECT id FROM {SCHEMA}.users WHERE login = %s", (login,))
             if cur.fetchone():
                 conn.close()
                 return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Логин уже занят"})}
 
+            primary_role = roles[0]
             cur.execute(
                 f"INSERT INTO {SCHEMA}.users (name, login, password_hash, role, department_id) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-                (name, login, password, role, department_id)
+                (name, login, password, primary_role, department_id)
             )
             new_id = cur.fetchone()[0]
+            for r in roles:
+                cur.execute(f"INSERT INTO {SCHEMA}.user_roles (user_id, role) VALUES (%s, %s) ON CONFLICT DO NOTHING", (new_id, r))
             conn.commit()
             conn.close()
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"id": new_id})}
@@ -156,16 +168,40 @@ def handler(event: dict, context) -> dict:
 
             updates = {}
             if body.get("name"): updates["name"] = body["name"].strip()
-            if body.get("role") and body["role"] in ROLE_CHOICES: updates["role"] = body["role"]
             if body.get("department_id") is not None: updates["department_id"] = body["department_id"] or None
             if body.get("password"): updates["password_hash"] = body["password"].strip()
 
-            if not updates:
-                conn.close()
-                return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Нет полей для обновления"})}
+            new_roles = [r for r in body.get("roles", []) if r in ROLE_CHOICES]
+            if new_roles:
+                updates["role"] = new_roles[0]
 
-            set_clause = ", ".join(f"{k} = %s" for k in updates)
-            cur.execute(f"UPDATE {SCHEMA}.users SET {set_clause} WHERE id = %s", list(updates.values()) + [user_id])
+            if updates:
+                set_clause = ", ".join(f"{k} = %s" for k in updates)
+                cur.execute(f"UPDATE {SCHEMA}.users SET {set_clause} WHERE id = %s", list(updates.values()) + [user_id])
+
+            if new_roles:
+                cur.execute(f"SELECT role FROM {SCHEMA}.user_roles WHERE user_id = %s", (user_id,))
+                existing = {r[0] for r in cur.fetchall()}
+                to_add = set(new_roles) - existing
+                to_remove = list(existing - set(new_roles))
+                to_add_list = list(to_add)
+                # Переиспользуем строки с удаляемыми ролями: меняем их на добавляемые
+                for i, old_role in enumerate(to_remove):
+                    if i < len(to_add_list):
+                        cur.execute(
+                            f"UPDATE {SCHEMA}.user_roles SET role = %s WHERE user_id = %s AND role = %s",
+                            (to_add_list[i], user_id, old_role)
+                        )
+                    else:
+                        # Больше нечем заменить — ставим первую новую роль (дубль уберётся ON CONFLICT)
+                        cur.execute(
+                            f"UPDATE {SCHEMA}.user_roles SET role = %s WHERE user_id = %s AND role = %s",
+                            (new_roles[0], user_id, old_role)
+                        )
+                # Добавляем оставшиеся новые роли (которых не было пар для замены)
+                for r in to_add_list[len(to_remove):]:
+                    cur.execute(f"INSERT INTO {SCHEMA}.user_roles (user_id, role) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user_id, r))
+
             conn.commit()
             conn.close()
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True})}
@@ -175,9 +211,9 @@ def handler(event: dict, context) -> dict:
             if not user_id:
                 conn.close()
                 return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Нужен id"})}
-            # Удаляем сессии пользователя перед удалением
-            cur.execute(f"DELETE FROM {SCHEMA}.sessions WHERE user_id = %s", (user_id,))
-            cur.execute(f"DELETE FROM {SCHEMA}.users WHERE id = %s", (user_id,))
+            cur.execute(f"UPDATE {SCHEMA}.sessions SET user_id = NULL WHERE user_id = %s", (user_id,))
+            cur.execute(f"UPDATE {SCHEMA}.user_roles SET role = 'deleted' WHERE user_id = %s", (user_id,))
+            cur.execute(f"UPDATE {SCHEMA}.users SET login = login || '_del_{user_id}', role = 'deleted' WHERE id = %s", (user_id,))
             conn.commit()
             conn.close()
             return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True})}

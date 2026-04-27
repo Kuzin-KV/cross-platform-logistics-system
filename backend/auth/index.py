@@ -41,6 +41,8 @@ def handler(event: dict, context) -> dict:
             return {"statusCode": 401, "headers": CORS, "body": json.dumps({"error": "Неверный логин или пароль"})}
 
         user_id, name, role, _, dept_id, dept_name = row
+        cur.execute(f"SELECT role FROM {SCHEMA}.user_roles WHERE user_id = %s", (user_id,))
+        roles = [r[0] for r in cur.fetchall()] or [role]
         token = secrets.token_hex(32)
         cur.execute(
             f"INSERT INTO {SCHEMA}.sessions (token, user_id) VALUES (%s, %s)",
@@ -54,7 +56,7 @@ def handler(event: dict, context) -> dict:
             "body": json.dumps({
                 "token": token,
                 "user": {
-                    "id": user_id, "name": name, "role": role,
+                    "id": user_id, "name": name, "role": role, "roles": roles,
                     "department_id": dept_id, "department_name": dept_name or ""
                 }
             })
@@ -82,12 +84,15 @@ def handler(event: dict, context) -> dict:
             return {"statusCode": 401, "headers": CORS, "body": json.dumps({"error": "Токен недействителен"})}
 
         user_id, name, role, dept_id, dept_name = row
+        cur.execute(f"SELECT role FROM {SCHEMA}.user_roles WHERE user_id = %s", (user_id,))
+        roles = [r[0] for r in cur.fetchall()] or [role]
+        conn.close()
         return {
             "statusCode": 200,
             "headers": CORS,
             "body": json.dumps({
                 "user": {
-                    "id": user_id, "name": name, "role": role,
+                    "id": user_id, "name": name, "role": role, "roles": roles,
                     "department_id": dept_id, "department_name": dept_name or ""
                 }
             })

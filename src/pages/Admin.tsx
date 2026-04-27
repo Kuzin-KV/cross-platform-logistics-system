@@ -5,7 +5,7 @@ import { apiAdminList, apiAdminAdd, apiAdminEdit, apiAdminDelete, apiAdminSaveCo
 interface RefItem { id: number; name: string; }
 interface UserItem {
   id: number; name: string; login: string;
-  role: string; department_id: number | null; dept_name: string | null;
+  role: string; roles: string[]; department_id: number | null; dept_name: string | null;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -162,14 +162,14 @@ function UsersPanel() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState<UserItem | null>(null);
-  const [form, setForm] = useState({ name: "", login: "", password: "", role: "driver", department_id: "" });
+  const [form, setForm] = useState({ name: "", login: "", password: "", roles: [] as string[], department_id: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     const [u, d, rl] = await Promise.all([apiAdminList("users"), apiAdminList("departments"), apiAdminList("role_labels")]);
-    if (Array.isArray(u)) setUsers(u);
+    if (Array.isArray(u)) setUsers(u as UserItem[]);
     if (Array.isArray(d)) setDepartments(d);
     if (Array.isArray(rl)) {
       const map: Record<string, string> = { ...ROLE_LABELS };
@@ -183,26 +183,34 @@ function UsersPanel() {
 
   const openAdd = () => {
     setEditUser(null);
-    setForm({ name: "", login: "", password: "", role: "driver", department_id: "" });
+    setForm({ name: "", login: "", password: "", roles: [], department_id: "" });
     setError("");
     setShowForm(true);
   };
 
   const openEdit = (u: UserItem) => {
     setEditUser(u);
-    setForm({ name: u.name, login: u.login, password: "", role: u.role, department_id: u.department_id ? String(u.department_id) : "" });
+    setForm({ name: u.name, login: u.login, password: "", roles: u.roles || [u.role], department_id: u.department_id ? String(u.department_id) : "" });
     setError("");
     setShowForm(true);
+  };
+
+  const toggleRole = (r: string) => {
+    setForm(p => ({
+      ...p,
+      roles: p.roles.includes(r) ? p.roles.filter(x => x !== r) : [...p.roles, r],
+    }));
   };
 
   const save = async () => {
     setError("");
     if (!form.name.trim() || !form.login.trim()) { setError("Имя и логин обязательны"); return; }
     if (!editUser && !form.password.trim()) { setError("Пароль обязателен для нового пользователя"); return; }
+    if (form.roles.length === 0) { setError("Выберите хотя бы одну группу"); return; }
     setSaving(true);
     try {
       const data: Record<string, unknown> = {
-        name: form.name.trim(), login: form.login.trim(), role: form.role,
+        name: form.name.trim(), login: form.login.trim(), roles: form.roles,
         department_id: form.department_id ? Number(form.department_id) : null,
       };
       if (form.password.trim()) data.password = form.password.trim();
@@ -226,12 +234,7 @@ function UsersPanel() {
     else alert(res.error || "Не удалось удалить");
   };
 
-  const set = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
-
-  const groupedUsers = ROLES.reduce((acc, role) => {
-    acc[role] = users.filter(u => u.role === role);
-    return acc;
-  }, {} as Record<string, UserItem[]>);
+  const setField = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   return (
     <div>
@@ -264,23 +267,28 @@ function UsersPanel() {
                 <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">{f.label}</label>
                 <input type={f.k === "password" ? "password" : "text"}
                   className="w-full border border-[#E0E0E0] bg-[#F7F7F5] px-3 py-2 text-sm outline-none focus:border-[#111]"
-                  value={form[f.k]} onChange={e => set(f.k, e.target.value)} placeholder={f.placeholder} />
+                  value={form[f.k]} onChange={e => setField(f.k, e.target.value)} placeholder={f.placeholder} />
               </div>
             ))}
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">Роль</label>
-              <select className="w-full border border-[#E0E0E0] bg-[#F7F7F5] px-3 py-2 text-sm outline-none focus:border-[#111]"
-                value={form.role} onChange={e => set("role", e.target.value)}>
-                {ROLES.map(r => <option key={r} value={r}>{roleLabels[r] ?? r}</option>)}
-              </select>
-            </div>
-            <div>
               <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">Подразделение</label>
               <select className="w-full border border-[#E0E0E0] bg-[#F7F7F5] px-3 py-2 text-sm outline-none focus:border-[#111]"
-                value={form.department_id} onChange={e => set("department_id", e.target.value)}>
+                value={form.department_id} onChange={e => setField("department_id", e.target.value)}>
                 <option value="">— не указано —</option>
                 {departments.map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>)}
               </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-2">Группы</label>
+              <div className="grid grid-cols-2 gap-2">
+                {ROLES.map(r => (
+                  <label key={r} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={form.roles.includes(r)} onChange={() => toggleRole(r)}
+                      className="w-4 h-4 accent-black" />
+                    <span className="text-sm">{roleLabels[r] ?? r}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           {error && <p className="text-xs text-red-600 px-5 pb-2">{error}</p>}
@@ -299,42 +307,38 @@ function UsersPanel() {
 
       {loading && <p className="text-sm text-[#AAA] py-8 text-center">Загрузка...</p>}
 
-      {/* Пользователи по группам */}
-      {!loading && ROLES.filter(r => groupedUsers[r]?.length > 0).map(role => (
-        <div key={role} className="mb-5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-2 flex items-center gap-2">
-            <Icon name="Users" size={11} />
-            {roleLabels[role] ?? role}
-            <span className="font-normal text-[#CCC]">({groupedUsers[role].length})</span>
-          </p>
-          <div className="bg-white border border-[#E0E0E0]">
-            {groupedUsers[role].map((u, i) => (
-              <div key={u.id}
-                className={`flex items-center gap-3 px-4 py-2.5 group border-b border-[#F0F0EE] last:border-b-0 ${i === 0 ? "" : ""}`}>
-                <div className="w-7 h-7 rounded-full bg-[#E8E8E8] flex items-center justify-center shrink-0">
-                  <Icon name="User" size={13} className="text-[#666]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{u.name}</p>
-                  <p className="text-[10px] text-[#AAA]">@{u.login} · {u.dept_name || "—"}</p>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(u)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[10px] border border-[#E0E0E0] hover:bg-[#F0F0EE] transition-colors">
-                    <Icon name="Pencil" size={10} />
-                    Изменить
-                  </button>
-                  <button onClick={() => del(u.id)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[10px] border border-red-100 text-red-500 hover:bg-red-50 transition-colors">
-                    <Icon name="Trash2" size={10} />
-                    Удалить
-                  </button>
-                </div>
+      {/* Список пользователей */}
+      {!loading && (
+        <div className="bg-white border border-[#E0E0E0]">
+          {users.length === 0 && <p className="text-sm text-[#BBB] py-8 text-center">Нет пользователей</p>}
+          {users.map((u) => (
+            <div key={u.id} className="flex items-center gap-3 px-4 py-2.5 group border-b border-[#F0F0EE] last:border-b-0">
+              <div className="w-7 h-7 rounded-full bg-[#E8E8E8] flex items-center justify-center shrink-0">
+                <Icon name="User" size={13} className="text-[#666]" />
               </div>
-            ))}
-          </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{u.name}</p>
+                <p className="text-[10px] text-[#AAA]">
+                  @{u.login} · {u.dept_name || "—"} ·{" "}
+                  {(u.roles || [u.role]).map(r => roleLabels[r] ?? r).join(", ")}
+                </p>
+              </div>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => openEdit(u)}
+                  className="flex items-center gap-1 px-2.5 py-1 text-[10px] border border-[#E0E0E0] hover:bg-[#F0F0EE] transition-colors">
+                  <Icon name="Pencil" size={10} />
+                  Изменить
+                </button>
+                <button onClick={() => del(u.id)}
+                  className="flex items-center gap-1 px-2.5 py-1 text-[10px] border border-red-100 text-red-500 hover:bg-red-50 transition-colors">
+                  <Icon name="Trash2" size={10} />
+                  Удалить
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ interface User {
   id: number;
   name: string;
   role: string;
+  roles: string[];
   department_id: number | null;
   department_name: string;
 }
@@ -296,11 +297,13 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
   const set = (k: string, v: string | number | boolean) => setFields(p => ({ ...p, [k]: v }));
 
   const stage = order.stage || 1;
-  const minStage = ROLE_MIN_STAGE[user.role] ?? 99;
+  const roles = user.roles?.length ? user.roles : [user.role];
+  const minStage = Math.min(...roles.map(r => ROLE_MIN_STAGE[r] ?? 99));
   const canEdit = stage >= minStage;
 
-  // Водитель — только свои заявки
-  const isMyOrder = user.role !== "driver" || order.driver_id === user.id;
+  // Водитель (только водитель) — только свои заявки
+  const isOnlyDriver = roles.length === 1 && roles[0] === "driver";
+  const isMyOrder = !isOnlyDriver || order.driver_id === user.id;
   const editable = canEdit && isMyOrder;
 
   const save = async () => {
@@ -319,7 +322,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
     ? String(fields[k])
     : String((order as unknown as Record<string, unknown>)[k] || "");
 
-  const allowedFields = ROLE_ALLOWED_FIELDS[user.role] ?? [];
+  const allowedFields = Array.from(new Set(roles.flatMap(r => ROLE_ALLOWED_FIELDS[r] ?? [])));
   const canEditField = (_roleFields: string[], k: string) =>
     editable && allowedFields.includes(k);
 
@@ -378,7 +381,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
   const hasEdits = Object.keys(fields).length > 0;
 
-  const stageBlocked = !canEdit && user.role !== "shop_chief";
+  const stageBlocked = !canEdit && !roles.includes("shop_chief");
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-end" onClick={onClose}>
@@ -466,7 +469,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
           </section>
 
           {/* Блок 2: ППБ — приоритет (кол. 8) — скрыт для начальника цеха */}
-          {user.role !== "shop_chief" && (
+          {!roles.includes("shop_chief") && (
           <section className={stage < 1 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 2 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>2</span>
@@ -659,7 +662,8 @@ export default function Index() {
 
   const logout = () => { localStorage.removeItem("token"); setUser(null); };
 
-  const isShopChief = user?.role === "shop_chief" || user?.role === "admin";
+  const userRoles = user?.roles?.length ? user.roles : (user?.role ? [user.role] : []);
+  const isShopChief = userRoles.some(r => r === "shop_chief" || r === "admin");
 
   const filtered = filterStatus === "все" ? orders
     : filterStatus === "выполнено" ? orders.filter(o => o.done)
@@ -678,7 +682,7 @@ export default function Index() {
 
   if (!user) return <LoginScreen onLogin={u => setUser(u)} />;
 
-  if (showAdmin && user.role === "admin") {
+  if (showAdmin && userRoles.includes("admin")) {
     return <Admin onBack={() => { setShowAdmin(false); loadRefs(); }} />;
   }
 
@@ -696,9 +700,9 @@ export default function Index() {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-xs font-medium">{user.name}</p>
-              <p className="text-[10px] text-[#AAA]">{(refs.role_labels?.[user.role]) ?? ROLE_LABELS[user.role]} · {user.department_name}</p>
+              <p className="text-[10px] text-[#AAA]">{userRoles.map(r => (refs.role_labels?.[r]) ?? ROLE_LABELS[r] ?? r).join(", ")} · {user.department_name}</p>
             </div>
-            {user.role === "admin" && (
+            {userRoles.includes("admin") && (
               <button onClick={() => setShowAdmin(true)} title="Администрирование"
                 className="w-8 h-8 flex items-center justify-center hover:bg-[#F0F0EE] transition-colors">
                 <Icon name="Settings" size={14} className="text-[#888]" />
