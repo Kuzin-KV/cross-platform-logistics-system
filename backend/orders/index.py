@@ -97,7 +97,7 @@ def fetch_order_dict(cur, order_id):
                priority, vehicle_model, vehicle_id, driver_name, driver_id,
                arrival_load_time, load_start_time, departure_load_time, sender_sign,
                arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
-               note, done, created_by, stage,
+               note, done, created_by, stage, tc_master_name,
                to_char(created_at, 'DD.MM.YYYY') as created_date
         FROM {SCHEMA}.orders WHERE id = %s
     """, (order_id,))
@@ -169,7 +169,7 @@ def handler(event: dict, context) -> dict:
                        vehicle_model, driver_name, driver_id,
                        arrival_load_time, load_start_time, departure_load_time, sender_sign,
                        arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
-                       note, done, created_by, stage,
+                       note, done, created_by, stage, tc_master_name,
                        to_char(created_at, 'DD.MM.YYYY') as created_date
                 FROM {SCHEMA}.orders
                 WHERE driver_id = %s
@@ -182,7 +182,7 @@ def handler(event: dict, context) -> dict:
                        vehicle_model, driver_name, driver_id,
                        arrival_load_time, load_start_time, departure_load_time, sender_sign,
                        arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
-                       note, done, created_by, stage,
+                       note, done, created_by, stage, tc_master_name,
                        to_char(created_at, 'DD.MM.YYYY') as created_date
                 FROM {SCHEMA}.orders
                 ORDER BY priority ASC NULLS LAST, created_at DESC
@@ -321,12 +321,14 @@ def handler(event: dict, context) -> dict:
             if r:
                 fields_to_update["vehicle_model"] = r[0]
 
-        # Если мастер назначает водителя по id — записываем имя
+        # Если мастер назначает водителя по id — записываем имя и фиксируем мастера
         if "driver_id" in fields_to_update and fields_to_update["driver_id"]:
             cur.execute(f"SELECT name FROM {SCHEMA}.users WHERE id = %s", (fields_to_update["driver_id"],))
             r = cur.fetchone()
             if r:
                 fields_to_update["driver_name"] = r[0]
+        if user["role"] == "tc_master" and ("driver_id" in fields_to_update or "driver_name" in fields_to_update):
+            fields_to_update["tc_master_name"] = user["name"]
 
         if not fields_to_update:
             conn.close()

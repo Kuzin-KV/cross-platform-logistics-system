@@ -54,6 +54,7 @@ interface Order {
   note: string;
   done: boolean;
   stage: number;
+  tc_master_name: string | null;
   created_date: string;
 }
 
@@ -767,8 +768,9 @@ export default function Index() {
                 { key: "quantity",     label: "Кол.",                   visible: true, sort_order: 4 },
                 { key: "priority",     label: "Приор.",                 visible: true, sort_order: 5 },
                 { key: "places",       label: "Место погр. → выгр.",    visible: true, sort_order: 6 },
-                { key: "driver_name",  label: "Водитель",               visible: true, sort_order: 7 },
-                { key: "stage",        label: "Этап",                   visible: true, sort_order: 8 },
+                { key: "driver_name",    label: "Водитель",               visible: true,  sort_order: 7 },
+                { key: "stage",          label: "Этап",                   visible: true,  sort_order: 8 },
+                { key: "tc_master_name", label: "Мастер ТЦ",             visible: false, sort_order: 9 },
               ];
               const cols = (refs.column_config && refs.column_config.length > 0 ? refs.column_config : COL_DEFAULTS)
                 .filter(c => c.visible)
@@ -777,7 +779,7 @@ export default function Index() {
               const COL_WIDTHS: Record<string, string> = {
                 order_num: "90px", created_date: "100px", cargo: "1fr",
                 quantity: "60px", priority: "60px", places: "200px",
-                driver_name: "130px", stage: "110px",
+                driver_name: "130px", stage: "110px", tc_master_name: "130px",
               };
               const gridTemplate = cols.map(c => COL_WIDTHS[c.key] || "100px").join(" ");
 
@@ -806,6 +808,7 @@ export default function Index() {
                   </div>
                 );
                 if (key === "driver_name") return <div className="px-3 py-3 text-xs">{o.driver_name || <span className="text-[#CCC]">не назначен</span>}</div>;
+                if (key === "tc_master_name") return <div className="px-3 py-3 text-xs">{o.tc_master_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "stage") return (
                   <div className="px-3 py-3">
                     <span className={`text-[10px] font-medium px-2 py-0.5 border inline-block w-[15ch] text-center leading-tight break-words whitespace-normal ${STAGE_COLOR[s]}`}>
