@@ -427,6 +427,40 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
           {saveError && <p className="text-xs text-red-600 mt-1">{saveError}</p>}
         </div>
 
+        {/* Участники заявки */}
+        {(order.applicant_name || order.driver_name || order.tc_master_name || order.sender_sign || order.receiver_sign) && (
+          <div className="px-6 py-3 border-b border-[#F0F0EE] bg-[#FAFAFA]">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#BBB] mb-2">Участники</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              {order.applicant_name && (
+                <span className="text-[11px] text-[#666]">
+                  <span className="text-[#BBB]">Заявитель:</span> {order.applicant_name}
+                </span>
+              )}
+              {order.tc_master_name && (
+                <span className="text-[11px] text-[#666]">
+                  <span className="text-[#BBB]">Мастер ТЦ:</span> {order.tc_master_name}
+                </span>
+              )}
+              {order.driver_name && (
+                <span className="text-[11px] text-[#666]">
+                  <span className="text-[#BBB]">Водитель:</span> {order.driver_name}
+                </span>
+              )}
+              {order.sender_sign && (
+                <span className="text-[11px] text-[#666]">
+                  <span className="text-[#BBB]">Сдача:</span> {order.sender_sign}
+                </span>
+              )}
+              {order.receiver_sign && (
+                <span className="text-[11px] text-[#666]">
+                  <span className="text-[#BBB]">Приём:</span> {order.receiver_sign}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="px-6 py-5 space-y-6 flex-1">
 
           {/* Блок 1: Заявка (кол. 1-7) — только просмотр для всех кроме admina */}
@@ -523,7 +557,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               <Input label="Время выезда из цеха (кол. 13)" k="departure_load_time" type="time" roleFields={senderFields} />
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[#AAA] mb-0.5">Ответственный за сдачу (кол. 14)</p>
-                {user.role === "sender" && editable ? (
+                {roles.includes("sender") && editable ? (
                   <div className="border border-[#E0E0E0] bg-[#F0F0EE] px-2.5 py-1.5 text-sm text-[#888]">
                     {user.name} <span className="text-[10px] text-[#AAA]">(автоматически)</span>
                   </div>
@@ -548,7 +582,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               <Input label="Время выезда из цеха (кол. 17)" k="departure_unload_time" type="time" roleFields={receiverFields} />
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[#AAA] mb-0.5">Ответственный за приём (кол. 18)</p>
-                {user.role === "receiver" && editable ? (
+                {roles.includes("receiver") && editable ? (
                   <div className="border border-[#E0E0E0] bg-[#F0F0EE] px-2.5 py-1.5 text-sm text-[#888]">
                     {user.name} <span className="text-[10px] text-[#AAA]">(автоматически)</span>
                   </div>
