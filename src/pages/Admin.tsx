@@ -281,7 +281,7 @@ function UsersPanel() {
             <div className="col-span-2">
               <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-2">Группы</label>
               <div className="grid grid-cols-2 gap-2">
-                {ROLES.filter(r => r !== "shop_chief").map(r => (
+                {ROLES.map(r => (
                   <label key={r} className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={form.roles.includes(r)} onChange={() => toggleRole(r)}
                       className="w-4 h-4 accent-black" />
@@ -289,15 +289,6 @@ function UsersPanel() {
                   </label>
                 ))}
               </div>
-            </div>
-            <div className="col-span-2 border border-amber-200 bg-amber-50 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-amber-700 mb-2 font-semibold">Расширенные полномочия · только для администратора</p>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" checked={form.roles.includes("shop_chief")} onChange={() => toggleRole("shop_chief")}
-                  className="w-4 h-4 accent-black" />
-                <span className="text-sm">{roleLabels["shop_chief"] ?? "Начальник цеха"}</span>
-              </label>
-              <p className="text-[10px] text-amber-600 mt-1.5">Даёт доступ к созданию заявок, редактированию примечания и статуса выполнения</p>
             </div>
           </div>
           {error && <p className="text-xs text-red-600 px-5 pb-2">{error}</p>}
