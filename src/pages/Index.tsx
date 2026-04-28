@@ -840,11 +840,12 @@ export default function Index() {
                 { key: "priority",       label: "Приор.",                visible: true,  sort_order: 5 },
                 { key: "places",         label: "Место погр. → выгр.",   visible: true,  sort_order: 6 },
                 { key: "applicant_name", label: "Заявитель",             visible: true,  sort_order: 7 },
-                { key: "tc_master_name", label: "Мастер ТЦ",            visible: true,  sort_order: 8 },
-                { key: "driver_name",    label: "Водитель",              visible: true,  sort_order: 9 },
-                { key: "sender_sign",    label: "Отв. за сдачу",         visible: true,  sort_order: 10 },
-                { key: "receiver_sign",  label: "Отв. за приём",         visible: true,  sort_order: 11 },
-                { key: "stage",          label: "Этап",                  visible: true,  sort_order: 12 },
+                { key: "ppb_name",       label: "ППБ",                   visible: true,  sort_order: 8 },
+                { key: "tc_master_name", label: "Мастер ТЦ",            visible: true,  sort_order: 9 },
+                { key: "driver_name",    label: "Водитель",              visible: true,  sort_order: 10 },
+                { key: "sender_sign",    label: "Отв. за сдачу",         visible: true,  sort_order: 11 },
+                { key: "receiver_sign",  label: "Отв. за приём",         visible: true,  sort_order: 12 },
+                { key: "stage",          label: "Этап",                  visible: true,  sort_order: 13 },
               ];
               const cols = (refs.column_config && refs.column_config.length > 0 ? refs.column_config : COL_DEFAULTS)
                 .filter(c => c.visible)
@@ -853,7 +854,7 @@ export default function Index() {
               const COL_WIDTHS: Record<string, string> = {
                 order_num: "80px", created_date: "90px", cargo: "1fr",
                 quantity: "55px", priority: "55px", places: "180px",
-                applicant_name: "120px", tc_master_name: "120px",
+                applicant_name: "120px", ppb_name: "120px", tc_master_name: "120px",
                 driver_name: "120px", sender_sign: "120px", receiver_sign: "120px",
                 stage: "110px",
               };
@@ -884,6 +885,7 @@ export default function Index() {
                   </div>
                 );
                 if (key === "applicant_name") return <div className="px-3 py-3 text-xs">{o.applicant_name || <span className="text-[#CCC]">—</span>}</div>;
+                if (key === "ppb_name") return <div className="px-3 py-3 text-xs">{o.ppb_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "tc_master_name") return <div className="px-3 py-3 text-xs">{o.tc_master_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "driver_name") return <div className="px-3 py-3 text-xs">{o.driver_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "sender_sign") return <div className="px-3 py-3 text-xs">{o.sender_sign || <span className="text-[#CCC]">—</span>}</div>;
