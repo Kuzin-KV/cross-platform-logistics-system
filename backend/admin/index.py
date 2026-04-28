@@ -135,7 +135,9 @@ def handler(event: dict, context) -> dict:
             name = body.get("name", "").strip()
             login = body.get("login", "").strip()
             password = body.get("password", "").strip()
-            roles = [r for r in body.get("roles", []) if r in ROLE_CHOICES]
+            requested_roles = [r for r in body.get("roles", []) if r in ROLE_CHOICES]
+            is_admin_user = "admin" in (current_user.get("roles") or [current_user["role"]])
+            roles = [r for r in requested_roles if r != "shop_chief" or is_admin_user]
             department_id = body.get("department_id") or None
 
             if not name or not login or not password or not roles:
@@ -171,7 +173,9 @@ def handler(event: dict, context) -> dict:
             if body.get("department_id") is not None: updates["department_id"] = body["department_id"] or None
             if body.get("password"): updates["password_hash"] = body["password"].strip()
 
-            new_roles = [r for r in body.get("roles", []) if r in ROLE_CHOICES]
+            is_admin_user = "admin" in (current_user.get("roles") or [current_user["role"]])
+            requested_roles = [r for r in body.get("roles", []) if r in ROLE_CHOICES]
+            new_roles = [r for r in requested_roles if r != "shop_chief" or is_admin_user]
             if new_roles:
                 updates["role"] = new_roles[0]
 
