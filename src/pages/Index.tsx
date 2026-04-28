@@ -302,7 +302,12 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
   const stage = order.stage || 1;
   const roles = user.roles?.length ? user.roles : [user.role];
-  const minStage = Math.min(...roles.map(r => ROLE_MIN_STAGE[r] ?? 99));
+  const priorityEnabled = colVisible("priority");
+  const effectiveMinStage = (r: string) => {
+    if (r === "tc" && !priorityEnabled) return 1;
+    return ROLE_MIN_STAGE[r] ?? 99;
+  };
+  const minStage = Math.min(...roles.map(effectiveMinStage));
   const canEdit = stage >= minStage;
 
   // Водитель (только водитель) — только свои заявки
@@ -559,7 +564,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 3: ТЦ — транспорт (кол. 9) */}
           {colVisible("vehicle_model") && (
-          <section className={stage < 2 ? "opacity-40 pointer-events-none" : ""}>
+          <section className={stage < (priorityEnabled ? 2 : 1) ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 3 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>3</span>
               Транспортный цех · Выбор техники
