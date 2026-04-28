@@ -8,7 +8,7 @@ import psycopg2
 SCHEMA = "t_p68114469_cross_platform_logis"
 CORS = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
 }
 
@@ -365,6 +365,26 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         conn.close()
         return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True, "stage": new_stage})}
+
+    # ── POST ?action=delete — удаление заявки (только admin) ─────────────────
+    if method == "POST" and action == "delete":
+        user_roles = set(user.get("roles") or [user["role"]])
+        if "admin" not in user_roles:
+            conn.close()
+            return {"statusCode": 403, "headers": CORS, "body": json.dumps({"error": "Нет доступа"})}
+        body = json.loads(event.get("body") or "{}")
+        order_id = body.get("id")
+        cur.execute(f"SELECT order_num FROM {SCHEMA}.orders WHERE id = %s", (order_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return {"statusCode": 404, "headers": CORS, "body": json.dumps({"error": "Заявка не найдена"})}
+        order_num = row[0]
+        cur.execute(f"DELETE FROM {SCHEMA}.orders WHERE id = %s", (order_id,))
+        log_action(cur, user, "Удалил заявку", order_num)
+        conn.commit()
+        conn.close()
+        return {"statusCode": 200, "headers": CORS, "body": json.dumps({"ok": True})}
 
     # ── GET ?action=logs — история ────────────────────────────────────────────
     if method == "GET" and action == "logs":

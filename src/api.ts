@@ -57,6 +57,12 @@ export async function apiUpdateOrder(id: number, fields: Record<string, unknown>
   });
 }
 
+export async function apiDeleteOrder(id: number) {
+  return safeFetch(withToken(`${URLS.orders}?action=delete`), {
+    method: "POST", headers: jsonHeaders(), body: JSON.stringify({ id }),
+  });
+}
+
 export async function apiGetLogs() {
   return safeFetch(withToken(`${URLS.orders}?action=logs`), { headers: jsonHeaders() });
 }

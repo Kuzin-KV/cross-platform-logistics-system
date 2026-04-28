@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
-import { apiLogin, apiMe, apiGetOrders, apiCreateOrder, apiUpdateOrder, apiGetLogs, apiGetRefs } from "@/api";
+import { apiLogin, apiMe, apiGetOrders, apiCreateOrder, apiUpdateOrder, apiDeleteOrder, apiGetLogs, apiGetRefs } from "@/api";
 import Admin from "@/pages/Admin";
 
 type Tab = "orders" | "reports" | "history";
@@ -296,6 +296,8 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
   const [fields, setFields] = useState<Record<string, string | number | boolean>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const set = (k: string, v: string | number | boolean) => setFields(p => ({ ...p, [k]: v }));
 
   const stage = order.stage || 1;
@@ -307,6 +309,14 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
   const isOnlyDriver = roles.length === 1 && roles[0] === "driver";
   const isMyOrder = !isOnlyDriver || order.driver_id === user.id;
   const editable = canEdit && isMyOrder;
+
+  const deleteOrder = async () => {
+    setDeleting(true);
+    const res = await apiDeleteOrder(order.id);
+    setDeleting(false);
+    if (res.ok) { onSaved(); onClose(); }
+    else setSaveError((res.error as string) || "Ошибка удаления");
+  };
 
   const save = async () => {
     if (!Object.keys(fields).length) { onClose(); return; }
@@ -408,6 +418,26 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
                 className="bg-[#111] text-white px-4 py-1.5 text-xs font-medium hover:bg-[#333] transition-colors disabled:opacity-50">
                 {saving ? "Сохраняю..." : "Сохранить"}
               </button>
+            )}
+            {roles.includes("admin") && (
+              confirmDelete ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] text-red-600">Удалить?</span>
+                  <button onClick={deleteOrder} disabled={deleting}
+                    className="bg-red-600 text-white px-2.5 py-1 text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50">
+                    {deleting ? "..." : "Да"}
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)}
+                    className="px-2.5 py-1 text-xs border border-[#E0E0E0] hover:bg-[#F0F0EE] transition-colors">
+                    Нет
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmDelete(true)}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-red-50 text-[#CCC] hover:text-red-500 transition-colors">
+                  <Icon name="Trash2" size={15} />
+                </button>
+              )
             )}
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-[#F0F0EE]">
               <Icon name="X" size={16} />
