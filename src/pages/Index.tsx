@@ -968,10 +968,14 @@ export default function Index() {
               const isAdmin = userRoles.includes("admin");
               const adminCol = isAdmin ? " 80px" : "";
               const fullGrid = gridTemplate + adminCol;
+              const minTableWidth = cols.reduce((sum, c) => {
+                const w = COL_WIDTHS[c.key] || "100px";
+                return sum + (w === "1fr" ? 200 : parseInt(w));
+              }, isAdmin ? 80 : 0) + "px";
 
               return (
                 <div className="bg-white border border-[#E0E0E0] overflow-x-auto">
-                  <div className="grid bg-[#F7F7F5] border-b border-[#E0E0E0]" style={{ gridTemplateColumns: fullGrid, minWidth: "600px" }}>
+                  <div className="grid bg-[#F7F7F5] border-b border-[#E0E0E0]" style={{ gridTemplateColumns: fullGrid, minWidth: minTableWidth }}>
                     {cols.map(c => (
                       <div key={c.key} className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[#999]">{c.label}</div>
                     ))}
@@ -985,7 +989,7 @@ export default function Index() {
                   {filtered.map((o, i) => (
                     <div key={o.id}
                       className={`grid border-b border-[#F0F0EE] hover:bg-[#FAFAFA] transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}
-                      style={{ gridTemplateColumns: fullGrid, minWidth: "600px" }}>
+                      style={{ gridTemplateColumns: fullGrid, minWidth: minTableWidth }}>
                       {cols.map(c => (
                         <div key={c.key} className="cursor-pointer" onClick={() => setSelectedOrder(o)}>
                           {renderCell(o, c.key)}
