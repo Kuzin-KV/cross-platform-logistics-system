@@ -485,10 +485,25 @@ function ColumnConfigPanel() {
 
   if (loading) return <p className="text-sm text-[#AAA]">Загрузка...</p>;
 
+  const colItems = items.filter(c => c.key !== "row_highlight");
+  const rowHighlightItem = items.find(c => c.key === "row_highlight");
+
   return (
     <div>
+      {rowHighlightItem && (
+        <div className="bg-white border border-[#E0E0E0] mb-4 px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Подсветка строк по цвету статуса</p>
+            <p className="text-[11px] text-[#999] mt-0.5">Каждая строка таблицы окрашивается в цвет её текущего статуса</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked={rowHighlightItem.visible} onChange={() => toggle("row_highlight")} className="sr-only peer" />
+            <div className="w-10 h-5 bg-[#E0E0E0] peer-checked:bg-[#111] rounded-full transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+          </label>
+        </div>
+      )}
       <div className="bg-white border border-[#E0E0E0] mb-4">
-        {items.map((col, idx) => (
+        {colItems.map((col, idx) => (
           <div key={col.key} className="flex items-center gap-3 px-4 py-3 border-b border-[#F0F0EE] last:border-b-0">
             <label className="flex items-center gap-2 flex-1 cursor-pointer">
               <input type="checkbox" checked={col.visible} onChange={() => toggle(col.key)}
@@ -500,7 +515,7 @@ function ColumnConfigPanel() {
                 className="w-7 h-7 flex items-center justify-center border border-[#E0E0E0] hover:bg-[#F0F0EE] disabled:opacity-30">
                 <Icon name="ChevronUp" size={12} />
               </button>
-              <button onClick={() => move(col.key, 1)} disabled={idx === items.length - 1}
+              <button onClick={() => move(col.key, 1)} disabled={idx === colItems.length - 1}
                 className="w-7 h-7 flex items-center justify-center border border-[#E0E0E0] hover:bg-[#F0F0EE] disabled:opacity-30">
                 <Icon name="ChevronDown" size={12} />
               </button>

@@ -929,8 +929,10 @@ export default function Index() {
                 { key: "receiver_sign",  label: "Отв. за приём",         visible: true,  sort_order: 12 },
                 { key: "stage",          label: "Этап",                  visible: true,  sort_order: 13 },
               ];
-              const cols = (refs.column_config && refs.column_config.length > 0 ? refs.column_config : COL_DEFAULTS)
-                .filter(c => c.visible)
+              const allConfig = refs.column_config && refs.column_config.length > 0 ? refs.column_config : COL_DEFAULTS;
+              const rowHighlight = allConfig.find(c => c.key === "row_highlight")?.visible ?? false;
+              const cols = allConfig
+                .filter(c => c.visible && c.key !== "row_highlight")
                 .sort((a, b) => a.sort_order - b.sort_order);
 
               const COL_WIDTHS: Record<string, string> = {
@@ -1010,10 +1012,19 @@ export default function Index() {
                       {orders.length === 0 ? "Нет заявок. Нажмите «Новая заявка»." : "Нет заявок по фильтру."}
                     </div>
                   )}
-                  {filtered.map((o, i) => (
+                  {filtered.map((o, i) => {
+                    const rowColor = rowHighlight ? (refs.stage_colors?.[o.stage] ?? "#6B7280") : null;
+                    return (
                     <div key={o.id}
-                      className={`grid border-b border-[#F0F0EE] hover:bg-[#FAFAFA] transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}
-                      style={{ gridTemplateColumns: fullGrid, minWidth: minTableWidth }}>
+                      className={`grid border-b transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}
+                      style={{
+                        gridTemplateColumns: fullGrid, minWidth: minTableWidth,
+                        borderBottomColor: rowColor ? rowColor + "33" : "#F0F0EE",
+                        backgroundColor: rowColor ? rowColor + "0D" : undefined,
+                      }}
+                      onMouseEnter={e => { if (!rowColor) (e.currentTarget as HTMLElement).style.backgroundColor = "#FAFAFA"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = rowColor ? rowColor + "0D" : ""; }}
+                    >
                       {cols.map(c => (
                         <div key={c.key} className="cursor-pointer" onClick={() => setSelectedOrder(o)}>
                           {renderCell(o, c.key)}
@@ -1041,7 +1052,7 @@ export default function Index() {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );})}
                 </div>
               );
             })()}
