@@ -732,6 +732,8 @@ export default function Index() {
   const [filterStatus, setFilterStatus] = useState("все");
   const [showForm, setShowForm] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -746,6 +748,14 @@ export default function Index() {
     const data = await apiGetOrders();
     if (Array.isArray(data)) setOrders(data);
   }, []);
+
+  const handleDeleteOrder = async (id: number) => {
+    setDeletingId(id);
+    const res = await apiDeleteOrder(id);
+    setDeletingId(null);
+    setConfirmDeleteId(null);
+    if (res.ok) loadOrders();
+  };
 
   const loadRefs = useCallback(async () => {
     const data = await apiGetRefs();
@@ -948,12 +958,17 @@ export default function Index() {
                 return <div className="px-3 py-3" />;
               };
 
+              const isAdmin = userRoles.includes("admin");
+              const adminCol = isAdmin ? " 80px" : "";
+              const fullGrid = gridTemplate + adminCol;
+
               return (
                 <div className="bg-white border border-[#E0E0E0] overflow-x-auto">
-                  <div className="grid bg-[#F7F7F5] border-b border-[#E0E0E0]" style={{ gridTemplateColumns: gridTemplate, minWidth: "600px" }}>
+                  <div className="grid bg-[#F7F7F5] border-b border-[#E0E0E0]" style={{ gridTemplateColumns: fullGrid, minWidth: "600px" }}>
                     {cols.map(c => (
                       <div key={c.key} className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[#999]">{c.label}</div>
                     ))}
+                    {isAdmin && <div className="px-3 py-2.5" />}
                   </div>
                   {filtered.length === 0 && (
                     <div className="py-16 text-center text-sm text-[#BBB]">
@@ -961,10 +976,35 @@ export default function Index() {
                     </div>
                   )}
                   {filtered.map((o, i) => (
-                    <div key={o.id} onClick={() => setSelectedOrder(o)}
-                      className={`grid border-b border-[#F0F0EE] hover:bg-[#FAFAFA] cursor-pointer transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}
-                      style={{ gridTemplateColumns: gridTemplate, minWidth: "600px" }}>
-                      {cols.map(c => <div key={c.key}>{renderCell(o, c.key)}</div>)}
+                    <div key={o.id}
+                      className={`grid border-b border-[#F0F0EE] hover:bg-[#FAFAFA] transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}
+                      style={{ gridTemplateColumns: fullGrid, minWidth: "600px" }}>
+                      {cols.map(c => (
+                        <div key={c.key} className="cursor-pointer" onClick={() => setSelectedOrder(o)}>
+                          {renderCell(o, c.key)}
+                        </div>
+                      ))}
+                      {isAdmin && (
+                        <div className="flex items-center justify-center px-2" onClick={e => e.stopPropagation()}>
+                          {confirmDeleteId === o.id ? (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handleDeleteOrder(o.id)} disabled={deletingId === o.id}
+                                className="bg-red-600 text-white px-2 py-0.5 text-[10px] font-medium hover:bg-red-700 disabled:opacity-50">
+                                {deletingId === o.id ? "..." : "Да"}
+                              </button>
+                              <button onClick={() => setConfirmDeleteId(null)}
+                                className="px-2 py-0.5 text-[10px] border border-[#E0E0E0] hover:bg-[#F0F0EE]">
+                                Нет
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmDeleteId(o.id)}
+                              className="w-7 h-7 flex items-center justify-center text-[#CCC] hover:text-red-500 hover:bg-red-50 transition-colors">
+                              <Icon name="Trash2" size={13} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
