@@ -685,7 +685,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[#AAA] mb-0.5">Статус выполнения (кол. 20)</p>
-                {user.role === "shop_chief" && editable ? (
+                {roles.includes("shop_chief") && editable ? (
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={Boolean(fields["done"] !== undefined ? fields["done"] : order.done)}
                       onChange={e => set("done", e.target.checked)}
@@ -701,7 +701,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               {/* Примечание — все могут видеть, shop_chief может редактировать */}
               <div className="col-span-2">
                 <p className="text-[10px] uppercase tracking-wider text-[#AAA] mb-1">Примечание (кол. 19)</p>
-                {user.role === "shop_chief" || user.role === "admin" ? (
+                {roles.includes("shop_chief") || roles.includes("admin") ? (
                   <textarea rows={2}
                     className="w-full border border-[#E0E0E0] bg-[#F7F7F5] px-2.5 py-1.5 text-sm outline-none focus:border-[#111] resize-none"
                     value={String(fields["note"] !== undefined ? fields["note"] : order.note || "")}
