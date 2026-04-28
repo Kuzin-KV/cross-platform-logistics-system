@@ -105,6 +105,17 @@ def handler(event: dict, context) -> dict:
             if not item_id:
                 conn.close()
                 return {"statusCode": 400, "headers": CORS, "body": json.dumps({"error": "Нужен id"})}
+            # Обнуляем ссылки в заявках перед удалением
+            if resource == "cargo_types":
+                cur.execute(f"UPDATE {SCHEMA}.orders SET cargo_type_id = NULL WHERE cargo_type_id = %s", (item_id,))
+            elif resource == "locations":
+                cur.execute(f"UPDATE {SCHEMA}.orders SET load_location_id = NULL WHERE load_location_id = %s", (item_id,))
+                cur.execute(f"UPDATE {SCHEMA}.orders SET unload_location_id = NULL WHERE unload_location_id = %s", (item_id,))
+            elif resource == "vehicles":
+                cur.execute(f"UPDATE {SCHEMA}.orders SET vehicle_id = NULL WHERE vehicle_id = %s", (item_id,))
+            elif resource == "departments":
+                cur.execute(f"UPDATE {SCHEMA}.users SET department_id = NULL WHERE department_id = %s", (item_id,))
+                cur.execute(f"UPDATE {SCHEMA}.orders SET department_id = NULL WHERE department_id = %s", (item_id,))
             cur.execute(f"DELETE FROM {table} WHERE id = %s", (item_id,))
             conn.commit()
             conn.close()
