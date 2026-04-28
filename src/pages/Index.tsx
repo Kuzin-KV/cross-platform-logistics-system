@@ -328,6 +328,12 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
   const canEditField = (_roleFields: string[], k: string) =>
     editable && allowedFields.includes(k);
 
+  const colVisible = (key: string) => {
+    if (!refs.column_config || refs.column_config.length === 0) return true;
+    const col = refs.column_config.find(c => c.key === key);
+    return col ? col.visible : true;
+  };
+
   const Input = ({ label, k, type = "text", roleFields }: {
     label: string; k: string; type?: string; roleFields: string[];
   }) => {
@@ -507,8 +513,8 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
             </div>
           </section>
 
-          {/* Блок 2: ППБ — приоритет (кол. 8) — скрыт для начальника цеха */}
-          {!roles.includes("shop_chief") && (
+          {/* Блок 2: ППБ — приоритет (кол. 8) — скрыт для начальника цеха и если колонка отключена */}
+          {!roles.includes("shop_chief") && colVisible("priority") && (
           <section className={stage < 1 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 2 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>2</span>
@@ -522,6 +528,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
           )}
 
           {/* Блок 3: ТЦ — транспорт (кол. 9) */}
+          {colVisible("vehicle_model") && (
           <section className={stage < 2 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 3 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>3</span>
@@ -536,8 +543,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               </div>
             </div>
           </section>
+          )}
 
           {/* Блок 4: Мастер ТЦ — водитель (кол. 10) */}
+          {colVisible("tc_master_name") && (
           <section className={stage < 3 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 4 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>4</span>
@@ -552,8 +561,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               </div>
             </div>
           </section>
+          )}
 
           {/* Блок 5: Погрузка — Водитель */}
+          {colVisible("driver_name") && (
           <section className={stage < 4 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 5 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>5</span>
@@ -565,8 +576,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               <Input label="Время начала погрузки (кол. 12)" k="load_start_time" type="time" roleFields={driverFields} />
             </div>
           </section>
+          )}
 
           {/* Блок 6: Погрузка — Ответственный за сдачу */}
+          {colVisible("sender_sign") && (
           <section className={stage < 5 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 6 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>6</span>
@@ -589,8 +602,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               </div>
             </div>
           </section>
+          )}
 
           {/* Блок 7: Разгрузка — Водитель */}
+          {colVisible("driver_name") && (
           <section className={stage < 6 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 7 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>7</span>
@@ -602,8 +617,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               <Input label="Время начала разгрузки (кол. 16)" k="unload_start_time" type="time" roleFields={driverFields} />
             </div>
           </section>
+          )}
 
           {/* Блок 8: Разгрузка — Ответственный за приём */}
+          {colVisible("receiver_sign") && (
           <section className={stage < 7 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
               <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 8 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>8</span>
@@ -626,6 +643,7 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
               </div>
             </div>
           </section>
+          )}
 
           {/* Блок 9: Завершение */}
           <section>
