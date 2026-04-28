@@ -96,7 +96,7 @@ def compute_stage(o: dict) -> int:
 def fetch_order_dict(cur, order_id):
     cur.execute(f"""
         SELECT id, order_num, department, department_id, applicant_name, cargo_name, cargo_type_id,
-               quantity, execution_date::text, load_place, load_location_id, unload_place, unload_location_id,
+               quantity, to_char(execution_date, 'YYYY-MM-DD"T"HH24:MI') as execution_date, load_place, load_location_id, unload_place, unload_location_id,
                priority, vehicle_model, vehicle_id, driver_name, driver_id,
                arrival_load_time, load_start_time, departure_load_time, sender_sign,
                arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
@@ -171,7 +171,7 @@ def handler(event: dict, context) -> dict:
         if user and set(roles) == {"driver"}:
             cur.execute(f"""
                 SELECT id, order_num, department, applicant_name, cargo_name, quantity,
-                       execution_date::text, load_place, unload_place, priority,
+                       to_char(execution_date, 'YYYY-MM-DD"T"HH24:MI') as execution_date, load_place, unload_place, priority,
                        vehicle_model, driver_name, driver_id,
                        arrival_load_time, load_start_time, departure_load_time, sender_sign,
                        arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
@@ -184,7 +184,7 @@ def handler(event: dict, context) -> dict:
         else:
             cur.execute(f"""
                 SELECT id, order_num, department, applicant_name, cargo_name, quantity,
-                       execution_date::text, load_place, unload_place, priority,
+                       to_char(execution_date, 'YYYY-MM-DD"T"HH24:MI') as execution_date, load_place, unload_place, priority,
                        vehicle_model, driver_name, driver_id,
                        arrival_load_time, load_start_time, departure_load_time, sender_sign,
                        arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
@@ -244,9 +244,8 @@ def handler(event: dict, context) -> dict:
             if r: unload_place = r[0]
 
         quantity = body.get("quantity", "")
-        # datetime-local приходит как "2026-04-24T08:00", берём только дату
         raw_date = body.get("execution_date") or None
-        execution_date = raw_date[:10] if raw_date else None
+        execution_date = raw_date.replace("T", " ") if raw_date else None
         note = body.get("note", "")
         department_id = to_int(user.get("department_id"))
 
