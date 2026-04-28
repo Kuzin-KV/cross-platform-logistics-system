@@ -952,6 +952,7 @@ export default function Index() {
                 if (key === "ppb_name") return <div className="px-3 py-3 text-xs">{o.ppb_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "tc_master_name") return <div className="px-3 py-3 text-xs">{o.tc_master_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "driver_name") return <div className="px-3 py-3 text-xs">{o.driver_name || <span className="text-[#CCC]">—</span>}</div>;
+                if (key === "vehicle_model") return <div className="px-3 py-3 text-xs">{o.vehicle_model || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "sender_sign") return <div className="px-3 py-3 text-xs">{o.sender_sign || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "receiver_sign") return <div className="px-3 py-3 text-xs">{o.receiver_sign || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "stage") return (
