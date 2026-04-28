@@ -23,6 +23,7 @@ interface Refs {
   drivers: RefItem[];
   role_labels?: Record<string, string>;
   stage_labels?: Record<number, string>;
+  stage_colors?: Record<number, string>;
   column_config?: { key: string; label: string; visible: boolean; sort_order: number }[];
 }
 
@@ -771,6 +772,11 @@ export default function Index() {
         Object.entries(data.stage_labels as Record<string, string>).forEach(([k, v]) => { normalized[Number(k)] = v; });
         data.stage_labels = normalized;
       }
+      if (data.stage_colors) {
+        const normalizedColors: Record<number, string> = {};
+        Object.entries(data.stage_colors as Record<string, string>).forEach(([k, v]) => { normalizedColors[Number(k)] = v; });
+        data.stage_colors = normalizedColors;
+      }
       setRefs(data);
     }
   }, []);
@@ -955,13 +961,19 @@ export default function Index() {
                 if (key === "vehicle_model") return <div className="px-3 py-3 text-xs">{o.vehicle_model || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "sender_sign") return <div className="px-3 py-3 text-xs">{o.sender_sign || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "receiver_sign") return <div className="px-3 py-3 text-xs">{o.receiver_sign || <span className="text-[#CCC]">—</span>}</div>;
-                if (key === "stage") return (
-                  <div className="px-3 py-3">
-                    <span className={`text-[10px] font-medium px-2 py-0.5 border inline-block w-[15ch] text-center leading-tight break-words whitespace-normal ${STAGE_COLOR[s]}`}>
-                      {refs.stage_labels?.[s] ?? STAGE_LABELS[s]}
-                    </span>
-                  </div>
-                );
+                if (key === "stage") {
+                  const hexColor = refs.stage_colors?.[s] ?? "#6B7280";
+                  return (
+                    <div className="px-3 py-3">
+                      <span
+                        className="text-[10px] font-medium px-2 py-0.5 inline-block w-[15ch] text-center leading-tight break-words whitespace-normal"
+                        style={{ backgroundColor: hexColor + "22", color: hexColor, border: `1px solid ${hexColor}55` }}
+                      >
+                        {refs.stage_labels?.[s] ?? STAGE_LABELS[s]}
+                      </span>
+                    </div>
+                  );
+                }
                 return <div className="px-3 py-3" />;
               };
 

@@ -344,13 +344,20 @@ function UsersPanel() {
 }
 
 // ── Редактирование названий статусов ──────────────────────────────────────
-interface StageLabelItem { stage: number; label: string; }
+interface StageLabelItem { stage: number; label: string; color: string; }
+
+const PRESET_COLORS = [
+  "#6B7280", "#3B82F6", "#10B981", "#F59E0B",
+  "#F97316", "#EF4444", "#8B5CF6", "#06B6D4",
+  "#EC4899", "#84CC16", "#14B8A6", "#F43F5E",
+];
 
 function StageLabelsPanel() {
   const [items, setItems] = useState<StageLabelItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<number | null>(null);
   const [val, setVal] = useState("");
+  const [colorVal, setColorVal] = useState("#6B7280");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -362,13 +369,13 @@ function StageLabelsPanel() {
 
   useEffect(() => { load(); }, [load]);
 
-  const startEdit = (item: StageLabelItem) => { setEditing(item.stage); setVal(item.label); };
-  const cancel = () => { setEditing(null); setVal(""); };
+  const startEdit = (item: StageLabelItem) => { setEditing(item.stage); setVal(item.label); setColorVal(item.color || "#6B7280"); };
+  const cancel = () => { setEditing(null); setVal(""); setColorVal("#6B7280"); };
 
   const save = async (stage: number) => {
     if (!val.trim()) return;
     setSaving(true);
-    await apiAdminEdit("stage_labels", { stage, label: val.trim() });
+    await apiAdminEdit("stage_labels", { stage, label: val.trim(), color: colorVal });
     setSaving(false);
     setEditing(null);
     load();
@@ -382,24 +389,47 @@ function StageLabelsPanel() {
         <div key={item.stage} className="flex items-center gap-3 px-4 py-3 border-b border-[#F0F0EE] last:border-b-0 group">
           <span className="text-[10px] font-mono text-[#AAA] w-8 shrink-0">#{item.stage}</span>
           {editing === item.stage ? (
-            <>
+            <div className="flex-1 flex flex-col gap-2">
               <input autoFocus
-                className="flex-1 border border-[#E0E0E0] bg-[#F7F7F5] px-2.5 py-1 text-sm outline-none focus:border-[#111]"
+                className="w-full border border-[#E0E0E0] bg-[#F7F7F5] px-2.5 py-1 text-sm outline-none focus:border-[#111]"
                 value={val} onChange={e => setVal(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") save(item.stage); if (e.key === "Escape") cancel(); }}
               />
-              <button onClick={() => save(item.stage)} disabled={saving}
-                className="bg-[#111] text-white px-3 py-1 text-xs hover:bg-[#333] disabled:opacity-50">
-                {saving ? "..." : "OK"}
-              </button>
-              <button onClick={cancel}
-                className="border border-[#E0E0E0] px-3 py-1 text-xs hover:bg-[#F0F0EE]">Отмена</button>
-            </>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1 flex-wrap">
+                  {PRESET_COLORS.map(c => (
+                    <button key={c} onClick={() => setColorVal(c)}
+                      className="w-5 h-5 rounded-sm border-2 transition-all"
+                      style={{ backgroundColor: c, borderColor: colorVal === c ? "#111" : "transparent" }}
+                    />
+                  ))}
+                </div>
+                <input type="color" value={colorVal} onChange={e => setColorVal(e.target.value)}
+                  className="w-7 h-7 cursor-pointer border border-[#E0E0E0] p-0.5 bg-white" title="Свой цвет"
+                />
+                <span className="text-[10px] text-[#AAA] font-mono">{colorVal}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[#777]">Предпросмотр:</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 inline-block"
+                  style={{ backgroundColor: colorVal + "22", color: colorVal, border: `1px solid ${colorVal}55` }}>
+                  {val || item.label}
+                </span>
+                <button onClick={() => save(item.stage)} disabled={saving}
+                  className="ml-auto bg-[#111] text-white px-3 py-1 text-xs hover:bg-[#333] disabled:opacity-50">
+                  {saving ? "..." : "Сохранить"}
+                </button>
+                <button onClick={cancel} className="border border-[#E0E0E0] px-3 py-1 text-xs hover:bg-[#F0F0EE]">Отмена</button>
+              </div>
+            </div>
           ) : (
             <>
-              <span className="flex-1 text-sm">{item.label}</span>
+              <span className="text-[10px] font-medium px-2 py-0.5 inline-block"
+                style={{ backgroundColor: (item.color || "#6B7280") + "22", color: item.color || "#6B7280", border: `1px solid ${item.color || "#6B7280"}55` }}>
+                {item.label}
+              </span>
               <button onClick={() => startEdit(item)}
-                className="flex items-center gap-1 px-2.5 py-1 text-[10px] border border-[#E0E0E0] hover:bg-[#F0F0EE] opacity-0 group-hover:opacity-100 transition-opacity">
+                className="ml-auto flex items-center gap-1 px-2.5 py-1 text-[10px] border border-[#E0E0E0] hover:bg-[#F0F0EE] opacity-0 group-hover:opacity-100 transition-opacity">
                 <Icon name="Pencil" size={10} />
                 Изменить
               </button>
