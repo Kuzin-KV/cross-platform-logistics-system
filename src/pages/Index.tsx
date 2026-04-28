@@ -465,9 +465,12 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 1: Заявка (кол. 1-7) — только просмотр для всех кроме admina */}
           <section>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-[#111] text-white flex items-center justify-center text-[9px]">1</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className="w-5 h-5 bg-[#111] text-white flex items-center justify-center text-[9px] shrink-0">1</span>
               Заявка · Начальник цеха
+              {order.applicant_name && (
+                <span className="text-[#111] font-bold normal-case tracking-normal">— {order.applicant_name}</span>
+              )}
             </p>
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               <div>
@@ -545,15 +548,26 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
             </div>
           </section>
 
-          {/* Блок 5+6: Погрузка */}
+          {/* Блок 5: Погрузка — Водитель */}
           <section className={stage < 4 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 6 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>5–6</span>
-              Погрузка · Водитель и ответственный за сдачу
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 5 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>5</span>
+              Погрузка · Водитель
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Время заезда в цех (кол. 11)" k="arrival_load_time" type="time" roleFields={driverFields} />
               <Input label="Время начала погрузки (кол. 12)" k="load_start_time" type="time" roleFields={driverFields} />
+            </div>
+          </section>
+
+          {/* Блок 6: Погрузка — Ответственный за сдачу */}
+          <section className={stage < 5 ? "opacity-40 pointer-events-none" : ""}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 6 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>6</span>
+              Погрузка · Ответственный за сдачу
+              {order.sender_sign && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.sender_sign}</span>}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
               <Input label="Время выезда из цеха (кол. 13)" k="departure_load_time" type="time" roleFields={senderFields} />
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[#AAA] mb-0.5">Ответственный за сдачу (кол. 14)</p>
@@ -570,15 +584,26 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
             </div>
           </section>
 
-          {/* Блок 7+8: Разгрузка */}
-          <section className={stage < 7 ? "opacity-40 pointer-events-none" : ""}>
+          {/* Блок 7: Разгрузка — Водитель */}
+          <section className={stage < 6 ? "opacity-40 pointer-events-none" : ""}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 8 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>7–8</span>
-              Разгрузка · Водитель и ответственный за приём
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 7 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>7</span>
+              Разгрузка · Водитель
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Время заезда в цех (кол. 15)" k="arrival_unload_time" type="time" roleFields={driverFields} />
               <Input label="Время начала разгрузки (кол. 16)" k="unload_start_time" type="time" roleFields={driverFields} />
+            </div>
+          </section>
+
+          {/* Блок 8: Разгрузка — Ответственный за приём */}
+          <section className={stage < 7 ? "opacity-40 pointer-events-none" : ""}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 8 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>8</span>
+              Разгрузка · Ответственный за приём
+              {order.receiver_sign && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.receiver_sign}</span>}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
               <Input label="Время выезда из цеха (кол. 17)" k="departure_unload_time" type="time" roleFields={receiverFields} />
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[#AAA] mb-0.5">Ответственный за приём (кол. 18)</p>
@@ -800,24 +825,29 @@ export default function Index() {
             {/* Таблица */}
             {(() => {
               const COL_DEFAULTS = [
-                { key: "order_num",    label: "№",                      visible: true, sort_order: 1 },
-                { key: "created_date", label: "Дата",                   visible: true, sort_order: 2 },
-                { key: "cargo",        label: "Груз / Подразделение",   visible: true, sort_order: 3 },
-                { key: "quantity",     label: "Кол.",                   visible: true, sort_order: 4 },
-                { key: "priority",     label: "Приор.",                 visible: true, sort_order: 5 },
-                { key: "places",       label: "Место погр. → выгр.",    visible: true, sort_order: 6 },
-                { key: "driver_name",    label: "Водитель",               visible: true,  sort_order: 7 },
-                { key: "stage",          label: "Этап",                   visible: true,  sort_order: 8 },
-                { key: "tc_master_name", label: "Мастер ТЦ",             visible: false, sort_order: 9 },
+                { key: "order_num",      label: "№",                     visible: true,  sort_order: 1 },
+                { key: "created_date",   label: "Дата",                  visible: true,  sort_order: 2 },
+                { key: "cargo",          label: "Груз / Подразделение",  visible: true,  sort_order: 3 },
+                { key: "quantity",       label: "Кол.",                  visible: true,  sort_order: 4 },
+                { key: "priority",       label: "Приор.",                visible: true,  sort_order: 5 },
+                { key: "places",         label: "Место погр. → выгр.",   visible: true,  sort_order: 6 },
+                { key: "applicant_name", label: "Заявитель",             visible: true,  sort_order: 7 },
+                { key: "tc_master_name", label: "Мастер ТЦ",            visible: true,  sort_order: 8 },
+                { key: "driver_name",    label: "Водитель",              visible: true,  sort_order: 9 },
+                { key: "sender_sign",    label: "Отв. за сдачу",         visible: true,  sort_order: 10 },
+                { key: "receiver_sign",  label: "Отв. за приём",         visible: true,  sort_order: 11 },
+                { key: "stage",          label: "Этап",                  visible: true,  sort_order: 12 },
               ];
               const cols = (refs.column_config && refs.column_config.length > 0 ? refs.column_config : COL_DEFAULTS)
                 .filter(c => c.visible)
                 .sort((a, b) => a.sort_order - b.sort_order);
 
               const COL_WIDTHS: Record<string, string> = {
-                order_num: "90px", created_date: "100px", cargo: "1fr",
-                quantity: "60px", priority: "60px", places: "200px",
-                driver_name: "130px", stage: "110px", tc_master_name: "130px",
+                order_num: "80px", created_date: "90px", cargo: "1fr",
+                quantity: "55px", priority: "55px", places: "180px",
+                applicant_name: "120px", tc_master_name: "120px",
+                driver_name: "120px", sender_sign: "120px", receiver_sign: "120px",
+                stage: "110px",
               };
               const gridTemplate = cols.map(c => COL_WIDTHS[c.key] || "100px").join(" ");
 
@@ -828,7 +858,7 @@ export default function Index() {
                 if (key === "cargo") return (
                   <div className="px-3 py-3">
                     <p className="text-sm font-medium leading-tight">{o.cargo_name || <span className="text-[#CCC]">не указан</span>}</p>
-                    <p className="text-[11px] text-[#AAA] mt-0.5">{o.department}{o.applicant_name ? ` · ${o.applicant_name}` : ""}</p>
+                    <p className="text-[11px] text-[#AAA] mt-0.5">{o.department}</p>
                   </div>
                 );
                 if (key === "quantity") return <div className="px-3 py-3 text-sm text-[#555]">{o.quantity || "—"}</div>;
@@ -845,8 +875,11 @@ export default function Index() {
                     <p className="truncate text-[#AAA] mt-0.5">{o.unload_place || "—"}</p>
                   </div>
                 );
-                if (key === "driver_name") return <div className="px-3 py-3 text-xs">{o.driver_name || <span className="text-[#CCC]">не назначен</span>}</div>;
+                if (key === "applicant_name") return <div className="px-3 py-3 text-xs">{o.applicant_name || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "tc_master_name") return <div className="px-3 py-3 text-xs">{o.tc_master_name || <span className="text-[#CCC]">—</span>}</div>;
+                if (key === "driver_name") return <div className="px-3 py-3 text-xs">{o.driver_name || <span className="text-[#CCC]">—</span>}</div>;
+                if (key === "sender_sign") return <div className="px-3 py-3 text-xs">{o.sender_sign || <span className="text-[#CCC]">—</span>}</div>;
+                if (key === "receiver_sign") return <div className="px-3 py-3 text-xs">{o.receiver_sign || <span className="text-[#CCC]">—</span>}</div>;
                 if (key === "stage") return (
                   <div className="px-3 py-3">
                     <span className={`text-[10px] font-medium px-2 py-0.5 border inline-block w-[15ch] text-center leading-tight break-words whitespace-normal ${STAGE_COLOR[s]}`}>
