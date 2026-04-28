@@ -100,7 +100,7 @@ def fetch_order_dict(cur, order_id):
                priority, vehicle_model, vehicle_id, driver_name, driver_id,
                arrival_load_time, load_start_time, departure_load_time, sender_sign,
                arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
-               note, done, created_by, stage, tc_master_name,
+               note, done, created_by, stage, tc_master_name, ppb_name, tc_name,
                to_char(created_at, 'DD.MM.YYYY') as created_date
         FROM {SCHEMA}.orders WHERE id = %s
     """, (order_id,))
@@ -173,7 +173,7 @@ def handler(event: dict, context) -> dict:
                        vehicle_model, driver_name, driver_id,
                        arrival_load_time, load_start_time, departure_load_time, sender_sign,
                        arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
-                       note, done, created_by, stage, tc_master_name,
+                       note, done, created_by, stage, tc_master_name, ppb_name, tc_name,
                        to_char(created_at, 'DD.MM.YYYY') as created_date
                 FROM {SCHEMA}.orders
                 WHERE driver_id = %s
@@ -186,7 +186,7 @@ def handler(event: dict, context) -> dict:
                        vehicle_model, driver_name, driver_id,
                        arrival_load_time, load_start_time, departure_load_time, sender_sign,
                        arrival_unload_time, unload_start_time, departure_unload_time, receiver_sign,
-                       note, done, created_by, stage, tc_master_name,
+                       note, done, created_by, stage, tc_master_name, ppb_name, tc_name,
                        to_char(created_at, 'DD.MM.YYYY') as created_date
                 FROM {SCHEMA}.orders
                 ORDER BY priority ASC NULLS LAST, created_at DESC
@@ -339,6 +339,12 @@ def handler(event: dict, context) -> dict:
                 fields_to_update["driver_name"] = r[0]
         if "tc_master" in roles and ("driver_id" in fields_to_update or "driver_name" in fields_to_update):
             fields_to_update["tc_master_name"] = user["name"]
+
+        # Фиксируем имя сотрудника по роли
+        if "ppb" in roles and "priority" in fields_to_update:
+            fields_to_update["ppb_name"] = user["name"]
+        if "tc" in roles and ("vehicle_id" in fields_to_update or "vehicle_model" in fields_to_update):
+            fields_to_update["tc_name"] = user["name"]
 
         if not fields_to_update:
             conn.close()

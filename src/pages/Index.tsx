@@ -56,6 +56,8 @@ interface Order {
   done: boolean;
   stage: number;
   tc_master_name: string | null;
+  ppb_name: string | null;
+  tc_name: string | null;
   created_date: string;
 }
 
@@ -508,9 +510,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
           {/* Блок 2: ППБ — приоритет (кол. 8) — скрыт для начальника цеха */}
           {!roles.includes("shop_chief") && (
           <section className={stage < 1 ? "opacity-40 pointer-events-none" : ""}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 2 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>2</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 2 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>2</span>
               ППБ · Приоритет
+              {order.ppb_name && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.ppb_name}</span>}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Приоритет 1–99 (кол. 8)" k="priority" type="number" roleFields={ppbFields} />
@@ -520,9 +523,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 3: ТЦ — транспорт (кол. 9) */}
           <section className={stage < 2 ? "opacity-40 pointer-events-none" : ""}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 3 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>3</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 3 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>3</span>
               Транспортный цех · Выбор техники
+              {order.tc_name && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.tc_name}</span>}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Select_ label="Транспорт (кол. 9)" k="vehicle_id" items={refs.vehicles} roleFields={tcFields} />
@@ -535,9 +539,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 4: Мастер ТЦ — водитель (кол. 10) */}
           <section className={stage < 3 ? "opacity-40 pointer-events-none" : ""}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 4 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>4</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 4 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>4</span>
               Мастер ТЦ · Назначение водителя
+              {order.tc_master_name && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.tc_master_name}</span>}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Select_ label="Водитель (кол. 10)" k="driver_id" items={refs.drivers} roleFields={masterFields} />
@@ -550,9 +555,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 5: Погрузка — Водитель */}
           <section className={stage < 4 ? "opacity-40 pointer-events-none" : ""}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 5 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>5</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 5 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>5</span>
               Погрузка · Водитель
+              {order.driver_name && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.driver_name}</span>}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Время заезда в цех (кол. 11)" k="arrival_load_time" type="time" roleFields={driverFields} />
@@ -586,9 +592,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 7: Разгрузка — Водитель */}
           <section className={stage < 6 ? "opacity-40 pointer-events-none" : ""}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage >= 7 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>7</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage >= 7 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>7</span>
               Разгрузка · Водитель
+              {order.driver_name && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.driver_name}</span>}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <Input label="Время заезда в цех (кол. 15)" k="arrival_unload_time" type="time" roleFields={driverFields} />
@@ -622,9 +629,10 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
           {/* Блок 9: Завершение */}
           <section>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2">
-              <span className={`w-5 h-5 flex items-center justify-center text-[9px] ${stage === 9 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>9</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#999] mb-3 flex items-center gap-2 flex-wrap">
+              <span className={`w-5 h-5 flex items-center justify-center text-[9px] shrink-0 ${stage === 9 ? "bg-[#111] text-white" : "bg-[#E8E8E8] text-[#999]"}`}>9</span>
               Завершение · Начальник цеха + Примечание
+              {order.applicant_name && <span className="text-[#111] font-bold normal-case tracking-normal">— {order.applicant_name}</span>}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
