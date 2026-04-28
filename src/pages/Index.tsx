@@ -947,12 +947,16 @@ export default function Index() {
               const renderCell = (o: Order, key: string) => {
                 const s = o.stage || 1;
                 if (key === "order_num") return <div className="px-3 py-3 text-[11px] font-mono text-[#888]">{o.order_num}</div>;
-                if (key === "created_date") return (
-                  <div className="px-3 py-3 text-xs text-[#666]">
-                    <div>{o.created_date}</div>
-                    {o.execution_date && <div className="text-[#AAA] mt-0.5">{o.execution_date}</div>}
-                  </div>
-                );
+                if (key === "created_date") {
+                  const execDate = o.execution_date
+                    ? (() => { const d = new Date(o.execution_date); return isNaN(d.getTime()) ? o.execution_date : `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })()
+                    : null;
+                  return (
+                    <div className="px-3 py-3 text-xs text-[#666]">
+                      {execDate ? <div>{execDate}</div> : <div>{o.created_date}</div>}
+                    </div>
+                  );
+                }
                 if (key === "cargo") return (
                   <div className="px-3 py-3">
                     <p className="text-sm font-medium leading-tight">{o.cargo_name || <span className="text-[#CCC]">не указан</span>}</p>
