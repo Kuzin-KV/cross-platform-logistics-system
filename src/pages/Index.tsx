@@ -455,14 +455,26 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
         {/* Progress bar */}
         <div className="px-6 pt-4 pb-4 border-b border-[#F0F0EE]">
           <div className="flex gap-0.5 mb-2">
-            {Array.from({ length: 9 }, (_, i) => (
-              <div key={i} className={`h-1.5 flex-1 ${i < stage ? "bg-[#111]" : "bg-[#E8E8E8]"}`} />
-            ))}
+            {Array.from({ length: 9 }, (_, i) => {
+              const stageColor = refs.stage_colors?.[i + 1] ?? "#6B7280";
+              return (
+                <div key={i} className="h-1.5 flex-1 rounded-sm transition-colors"
+                  style={{ backgroundColor: i < stage ? stageColor : "#E8E8E8" }} />
+              );
+            })}
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-[11px] text-[#888]">
-              Этап {stage} из 9 — <span className="text-[#111] font-medium">{refs.stage_labels?.[stage] ?? STAGE_LABELS[stage]}</span>
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-[#888]">Этап {stage} из 9</p>
+              <span className="text-[10px] font-medium px-2 py-0.5"
+                style={{
+                  backgroundColor: (refs.stage_colors?.[stage] ?? "#6B7280") + "22",
+                  color: refs.stage_colors?.[stage] ?? "#6B7280",
+                  border: `1px solid ${refs.stage_colors?.[stage] ?? "#6B7280"}55`
+                }}>
+                {refs.stage_labels?.[stage] ?? STAGE_LABELS[stage]}
+              </span>
+            </div>
             {stageBlocked && (
               <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5">
                 Ваш этап ещё не наступил
