@@ -949,7 +949,10 @@ export default function Index() {
                 if (key === "order_num") return <div className="px-3 py-3 text-[11px] font-mono text-[#888]">{o.order_num}</div>;
                 if (key === "created_date") {
                   const execDate = o.execution_date
-                    ? (() => { const d = new Date(o.execution_date); return isNaN(d.getTime()) ? o.execution_date : `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; })()
+                    ? (() => {
+                        const m = o.execution_date.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+                        return m ? `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}` : o.execution_date;
+                      })()
                     : null;
                   return (
                     <div className="px-3 py-3 text-xs text-[#666]">
