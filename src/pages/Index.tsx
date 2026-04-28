@@ -182,7 +182,7 @@ function NewOrderForm({ user, refs, onClose, onCreated }: {
   user: User; refs: Refs; onClose: () => void; onCreated: () => void;
 }) {
   const [cargo_type_id, setCargoTypeId] = useState<string>("");
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [execution_date, setExecutionDate] = useState("");
   const [load_location_id, setLoadLocId] = useState<string>("");
   const [unload_location_id, setUnloadLocId] = useState<string>("");
