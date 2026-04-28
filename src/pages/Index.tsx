@@ -302,6 +302,13 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
 
   const stage = order.stage || 1;
   const roles = user.roles?.length ? user.roles : [user.role];
+
+  const colVisible = (key: string) => {
+    if (!refs.column_config || refs.column_config.length === 0) return true;
+    const col = refs.column_config.find(c => c.key === key);
+    return col ? col.visible : true;
+  };
+
   const priorityEnabled = colVisible("priority");
   const effectiveMinStage = (r: string) => {
     if (r === "tc" && !priorityEnabled) return 1;
@@ -342,12 +349,6 @@ function OrderPanel({ order, user, refs, onClose, onSaved }: {
   const allowedFields = Array.from(new Set(roles.flatMap(r => ROLE_ALLOWED_FIELDS[r] ?? [])));
   const canEditField = (_roleFields: string[], k: string) =>
     editable && allowedFields.includes(k);
-
-  const colVisible = (key: string) => {
-    if (!refs.column_config || refs.column_config.length === 0) return true;
-    const col = refs.column_config.find(c => c.key === key);
-    return col ? col.visible : true;
-  };
 
   const Input = ({ label, k, type = "text", roleFields }: {
     label: string; k: string; type?: string; roleFields: string[];
